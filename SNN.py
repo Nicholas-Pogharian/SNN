@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.datasets import fetch_openml
 import sys
+import time
 
 """
 THIS CODE TRAINS AND TESTS A SPIKING NEURAL NETWORK
@@ -69,11 +70,12 @@ class SynapseLayer:
     They exist as a matrix of weights of dimensions input_size X output_size
     Initial weights are set to random values around half the max weight
     """
-    def __init__(self, input_size, output_size, alpha_plus, alpha_minus, beta, min_weight=0, max_weight=1,spike_duration=25):
+    def __init__(self, input_size, output_size, alpha_plus, alpha_minus, beta_plus, beta_minus, min_weight=0, max_weight=1,spike_duration=25):
         self.min_weight = min_weight                                                     # Minumum synaptic weight
         self.max_weight = max_weight                                                     # Maximum synaptic weight
         self.weights = np.clip(np.random.normal(0,0.25,(input_size,output_size))+max_weight/2,min_weight,max_weight) # Initialize layer weights
-        self.beta = beta                                                                 # STDP exponential factor
+        self.beta_plus = beta_plus                                                       # STDP exponential factor
+        self.beta_minus = beta_minus                                                     # STDP exponential factor
         self.input_size = input_size                                                     # Size of input
         self.output_size = output_size                                                   # Size of output
         self.input_spike_trace = np.zeros(self.input_size,dtype=int)        # spike traces
@@ -95,11 +97,11 @@ class SynapseLayer:
         # print(self.weights[self.input_spike_trace==1,output_spikes==True])
         # print(self.weights[self.input_spike_trace==0,output_spikes==True])
         modify_up=np.outer(self.input_spike_trace==True,output_spikes).astype(bool)
-        self.weights[modify_up]+=self.alpha_plus*np.exp(-self.beta*(self.weights[modify_up]-self.min_weight)/(self.max_weight-self.min_weight))
+        self.weights[modify_up]+=self.alpha_plus*np.exp(-self.beta_plus*(self.weights[modify_up]-self.min_weight)/(self.max_weight-self.min_weight))
         modify_down=np.outer(self.input_spike_trace==False,output_spikes).astype(bool)
         # print(modify_up)
         # print(modify_down)
-        self.weights[modify_down]+=self.alpha_minus*np.exp(-self.beta*(self.max_weight-self.weights[modify_down])/(self.max_weight-self.min_weight))
+        self.weights[modify_down]+=self.alpha_minus*np.exp(-self.beta_minus*(self.max_weight-self.weights[modify_down])/(self.max_weight-self.min_weight))
         
         self.weights=np.clip(self.weights,self.min_weight,self.max_weight) #make sure weights are between min and max values
         return None
@@ -131,7 +133,7 @@ def train_round(neurons,synapses,training_data,training_labels,training_time=600
 
     #do some training on the neurons
     digits_presented=np.zeros(10)
-    digit_time=350
+    digit_time=int(sys.argv[3])
     for i in range(training_time):
         #voltages of neurons in the SNN
         outputvoltages = np.zeros((neurons.size,digit_time),dtype=float)
@@ -183,7 +185,7 @@ def label_outputs(neurons,synapses,training_data,training_labels):
     """
     classification_time=10000
     spike_frequencies=np.zeros((neurons.size,10))
-    digit_time=350
+    digit_time=int(sys.argv[3])
     digits_presented=np.zeros(10)
     for i in range(classification_time):
         #voltages of neurons in the SNN
@@ -220,7 +222,7 @@ def test_accuracy(neurons,synapses,training_data,training_labels,neuron_ids):
     #now estimate accuracy
     test_time=10000
     confusion_matrix=np.zeros((10,10))
-    digit_time=350
+    digit_time=int(sys.argv[3])
     digits_presented=np.zeros(10)
     correct_predictions=0
     for i in range(test_time):
@@ -256,6 +258,7 @@ def test_accuracy(neurons,synapses,training_data,training_labels,neuron_ids):
     
 #do some testing
 if __name__ == "__main__":
+    start_time=time.time() #start time
     
     #get mnist data
     mnist = fetch_openml('mnist_784', version=1, as_frame=False)
@@ -264,10 +267,12 @@ if __name__ == "__main__":
     
     #create neurons and synapses
     neurons=InhibitedNeuronLayer(int(sys.argv[1]), tau=100, v_reset=0.0, v_thresh=500, theta=float(sys.argv[2]), tau_theta=0.0001)
-    synapses=SynapseLayer(784,neurons.size,alpha_plus=0.01,alpha_minus=-0.005,beta=3,min_weight=0,max_weight=1,spike_duration=25)
+    #synapses=SynapseLayer(784,neurons.size,alpha_plus=0.357,alpha_minus=-0.236,beta_plus=2.87,beta_minus=2.31,min_weight=0,max_weight=1,spike_duration=10)
+    synapses=SynapseLayer(784,neurons.size,alpha_plus=float(sys.argv[5]),alpha_minus=-float(sys.argv[6]),beta_plus=float(sys.argv[7]),beta_minus=float(sys.argv[8]),min_weight=0,max_weight=1,spike_duration=int(sys.argv[4]))
     
-    #do some fake training
-    train_epochs(neurons,synapses,training_data,training_labels,10)
+    #do some training
+    #train_epochs(neurons,synapses,training_data,training_labels,10)
+    train_epochs(neurons,synapses,training_data,training_labels,1)
     
     #label the digits
     neuron_ids=label_outputs(neurons,synapses,training_data,training_labels)
@@ -276,5 +281,9 @@ if __name__ == "__main__":
     accuracy, confusion_matrix = test_accuracy(neurons,synapses,training_data,training_labels,neuron_ids)
     
     #save results to files
-    np.savetxt(f'confusion_matrix_{sys.argv[1]}_{sys.argv[2]}.npy', confusion_matrix)
-    np.savetxt(f'accuracy_{sys.argv[1]}_{sys.argv[2]}.txt',np.array([accuracy]))
+    for i in range(5):
+        np.savetxt(f'output_{i}_{sys.argv[1]}_{sys.argv[2]}_{sys.argv[3]}_{sys.argv[4]}_{sys.argv[5]}_{sys.argv[6]}_{sys.argv[7]}_{sys.argv[8]}.dat', synapses.weights[:,i].reshape((28,28)))
+    np.savetxt(f'confusion_matrix_{sys.argv[1]}_{sys.argv[2]}_{sys.argv[3]}_{sys.argv[4]}_{sys.argv[5]}_{sys.argv[6]}_{sys.argv[7]}_{sys.argv[8]}.dat', confusion_matrix)
+    np.savetxt(f'accuracy_{sys.argv[1]}_{sys.argv[2]}_{sys.argv[3]}_{sys.argv[4]}_{sys.argv[5]}_{sys.argv[6]}_{sys.argv[7]}_{sys.argv[8]}.dat',np.array([accuracy]))
+    
+    print(f'Elapsed time (s): {time.time()-start_time}')
