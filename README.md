@@ -15,7 +15,7 @@ where $\tau$ is the relaxation time of the potential, $R$ is the neuron resistan
 
 The second difference between spiking neural networks and traditional neural networks is that they do not learn via gradient descent. Instead, they learn through a local update rule which mirrors spike-timing dependent plasticity (STDP) in the brain. This code uses a simplified version of an STDP-derived learning rule: if an output neuron spikes within some window of an input neuron spiking, the synaptic weight $g$ will be increased by $\Delta g_p$. Otherwise, output spikes will decrease synaptic weight by $\Delta g_d$. This is described in the figure below assuming a spike window of 10 ms, $\Delta g_p$=0.1 S, and $\Delta g_d$=-0.05 S.
 
-<img src="figures/mod_stdp.png" width="750"/>
+<img src="figures/mod_stdp.png" width="650"/>
 
 The behavior of $\Delta g_p$ and $\Delta g_d$ is described via the following equations:
 
@@ -29,7 +29,8 @@ This implementation of a spiking neural network uses a 2-layer unsupervised para
 ---
 ## Results
 Using 200 output neurons, $\theta=1$, $\alpha_p=0.001$, $\alpha_d=-0.0005$, $\beta_p=\beta_d=3$, the network was trained for 10 epochs. Each digit was presented for 350 ms, and each spike lasted 25 ms. The resulting confusion matrix is displayed below.
-![Alt text](figures/confusion_matrix.png)
+
+<img src="figures/confusion_matrix.png" width="650"/>
 
 ---
 ## Instructions
