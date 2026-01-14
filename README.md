@@ -35,7 +35,7 @@ Using 200 output neurons, $\theta=1$, $\alpha_p=0.001$, $\alpha_d=-0.0005$, $\be
 ---
 ## Instructions
 
-This code was written using Python 3.9.7. It requires the numpy (version 1.22.4 or better) and scikit-learn (version 1.6.1 or better) packages. To train the network, test the network on out-of-sample data, and print results including a confusion matrix for digit recognition, run 'SNN.py' in the command line. There are 8 command line arguments denoting hyperparameters of the network: 
+This code was written using Python 3.9.7. It requires the numpy (version 1.22.4 or newer) and scikit-learn (version 1.6.1 or newer) packages. These dependencies are contained in 'requirements.txt'. To train the network, test the network on out-of-sample data, and print results including a confusion matrix for digit recognition, run 'SNN.py' in the command line. There are 8 command line arguments denoting hyperparameters of the network: 
 1. The number of neurons in the output layer of the network
 2. $\theta$ value for neurons in the network
 3. Presentation time for each digit
